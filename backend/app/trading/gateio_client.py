@@ -27,24 +27,29 @@ def get_trading_mode():
 
 
 def get_host():
-    mode = get_trading_mode()
-
-    if mode == "TESTNET":
-        return GATEIO_TESTNET_HOST
-
-    return GATEIO_LIVE_HOST
+    return GATEIO_TESTNET_HOST if get_trading_mode() == "TESTNET" else GATEIO_LIVE_HOST
 
 
 def get_keys():
-    api_key = os.getenv("GATEIO_API_KEY", "").strip()
-    api_secret = os.getenv("GATEIO_API_SECRET", "").strip()
-
-    return api_key, api_secret
+    return (
+        os.getenv("GATEIO_API_KEY", "").strip(),
+        os.getenv("GATEIO_API_SECRET", "").strip(),
+    )
 
 
 def keys_are_ready():
     api_key, api_secret = get_keys()
     return bool(api_key and api_secret)
+
+
+def format_decimal(value, max_decimals: int = 12):
+    try:
+        number = float(value)
+        text = f"{number:.{max_decimals}f}"
+        text = text.rstrip("0").rstrip(".")
+        return text if text else "0"
+    except Exception:
+        return str(value)
 
 
 def normalize_spot_pair(symbol: str):
@@ -93,7 +98,6 @@ def public_gateio_request(path: str, params=None):
     request_path = f"{API_PREFIX}{path}"
 
     url = f"{get_host()}{request_path}"
-
     if query_string:
         url = f"{url}?{query_string}"
 
@@ -175,7 +179,6 @@ def gateio_request(method: str, path: str, params=None, body=None):
     )
 
     url = f"{get_host()}{request_path}"
-
     if query_string:
         url = f"{url}?{query_string}"
 
@@ -273,7 +276,9 @@ def get_best_bid_ask(symbol: str):
         "best_bid": best_bid,
         "best_ask": best_ask,
         "spread": round(best_ask - best_bid, 8),
-        "spread_percent": round(((best_ask - best_bid) / best_bid) * 100, 4) if best_bid > 0 else 0,
+        "spread_percent": round(((best_ask - best_bid) / best_bid) * 100, 4)
+        if best_bid > 0
+        else 0,
         "orderbook_response": orderbook,
     }
 
@@ -347,14 +352,16 @@ def create_spot_order(symbol: str, side: str, amount: str, price: str | None = N
         }
 
     final_price = ioc_price_result["price"]
+    formatted_amount = format_decimal(amount)
+    formatted_price = format_decimal(final_price, 8)
 
     order = {
         "currency_pair": pair,
         "side": side,
-        "amount": str(amount),
+        "amount": formatted_amount,
         "account": "spot",
         "type": "limit",
-        "price": str(final_price),
+        "price": formatted_price,
         "time_in_force": "ioc",
     }
 
@@ -366,9 +373,9 @@ def create_spot_order(symbol: str, side: str, amount: str, price: str | None = N
         "symbol": symbol.upper(),
         "currency_pair": pair,
         "side": side,
-        "amount": str(amount),
+        "amount": formatted_amount,
         "requested_price": str(price) if price else None,
-        "final_price": str(final_price),
+        "final_price": formatted_price,
         "price_source": ioc_price_result,
         "order_type": order["type"],
         "time_in_force": order["time_in_force"],

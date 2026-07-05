@@ -25,6 +25,8 @@ from app.api.paper import router as paper_router
 from app.api.bots import router as bots_router
 from app.api.quantum_pro_bots import router as quantum_pro_bots_router
 from app.api.trading import router as trading_router
+from app.api.portfolio_manager import router as portfolio_manager_router
+from app.api.quantum_ai_v2 import router as quantum_ai_v2_router
 
 from app.ai.bot_auto_runner import start_bot_runner
 
@@ -60,7 +62,8 @@ app.include_router(paper_router)
 app.include_router(bots_router)
 app.include_router(quantum_pro_bots_router)
 app.include_router(trading_router)
-
+app.include_router(portfolio_manager_router)
+app.include_router(quantum_ai_v2_router)
 
 @app.on_event("startup")
 async def startup_event():
